@@ -86,29 +86,29 @@ jobs:
     - name: Run Fastlane - test
       run: bundle exec fastlane test
 
-    # テスト結果のアップロード fastlaneで生成している
-    - uses: actions/upload-artifact@v2
-      with:
-        name: test-result
-        path: static_html/test_result
+    # # テスト結果のアップロード fastlaneで生成している
+    # - uses: actions/upload-artifact@v2
+    #   with:
+    #     name: test-result
+    #     path: static_html/test_result
 
-    # コードカバレッジのアップロード fastlaneで生成している
-    - uses: actions/upload-artifact@v2
-      with:
-        name: coverage-result
-        path: static_html/coverage_result
+    # # コードカバレッジのアップロード fastlaneで生成している
+    # - uses: actions/upload-artifact@v2
+    #   with:
+    #     name: coverage-result
+    #     path: static_html/coverage_result
 
-    # AWS S3
-    - name: credential aws
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-1
+    # # AWS S3
+    # - name: credential aws
+    #   uses: aws-actions/configure-aws-credentials@v1
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: ap-northeast-1
 
-    - name: sync S3
-      working-directory: static_html
-      run: aws s3 sync . s3://templateiosuikit/static_html --delete --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers --exclude "README.md"
+    # - name: sync S3
+    #   working-directory: static_html
+    #   run: aws s3 sync . s3://templateiosuikit/static_html --delete --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers --exclude "README.md"
 
     # slackへ転送
     - name: Run Fastlane - slack

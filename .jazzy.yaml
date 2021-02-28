@@ -13,13 +13,13 @@ output: static_html/docs
 # author: Kei Sakiyama
 
 # ドキュメント化する対象モジュールの名称
-module: Template_iOSUIKit
+module: Template_iOSUIKit_VIPER
 
 xcodebuild_arguments: 
   - -workspace
-  - Template_iOSUIKit.xcworkspace
+  - Template_iOSUIKit_VIPER.xcworkspace
   - -scheme
-  - Template_iOSUIKit
+  - Template_iOSUIKit_VIPER
 
 # ドキュメントコメントのないファイルはスキップするか否か
 skip_undocumented: true
