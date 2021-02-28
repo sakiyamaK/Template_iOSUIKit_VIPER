@@ -1,0 +1,4 @@
+VIPER:
+  Target: Template_iOSUIKit_VIPER
+  TemplateDirectoryPath: ./templates/PuiTemplate/ios/VIPER
+  GenerateRootPath: ./Template_iOSUIKit_VIPER

@@ -1,0 +1,117 @@
+name: main
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore: [ README.md ]
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore: [ README.md ]
+env:
+  DEVELOPER_DIR: /Applications/Xcode_12.3.app
+jobs:
+  build:
+    runs-on: macos-latest
+    env:
+      MINT_PATH: mint/lib
+      MINT_LINK_PATH: mint/bin
+      HOMEBREW_NO_AUTO_UPDATE: 1 
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+
+    steps:
+    - uses: actions/checkout@v2
+
+    # Xcodeのリストを表示
+    - name: Show Xcode list
+      run: ls /Applications | grep 'Xcode'    
+
+    # Xcodeのバージョンを表示
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    # Homebrewのupdateと管理しているライブラリのキャッシュ (Mintのみ)
+    - name: Update Homebrew
+      run: |
+        brew update --preinstall
+        cat "$(brew --repository)/Library/Taps/homebrew/homebrew-core/Formula/mint.rb" > .github/brew-formulae
+
+    - name: Cache Homebrew
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/Library/Caches/Homebrew/mint
+          ~/Library/Caches/Homebrew/downloads/mint
+        key: brew-${{ hashFiles('.github/brew-formulae') }}
+        restore-keys: brew-
+
+    # Gemで管理しているライブラリのキャッシュ
+    - name: Cache Gems
+      uses: actions/cache@v2
+      with:
+        path: vendor/bundle
+        key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-gems-
+
+    # Mintで管理しているライブラリのキャッシュ
+    - name: Cache Mint packages
+      uses: actions/cache@v2
+      with:
+        path: mint
+        key: ${{ runner.os }}-mint-${{ hashFiles('**/Mintfile') }}
+        restore-keys: |
+          ${{ runner.os }}-mint-
+  
+    # CocoaPodsで管理しているライブラリのキャッシュ
+    - name: Cache Pods
+      uses: actions/cache@v2
+      with:
+        path: Pods
+        key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pods-   
+
+     # Mintのインストール
+    - name: Install Mint
+      run: brew install mint
+
+    # スクリプトの実行
+    - name: run setup script
+      run: ./script/setup.sh
+
+    # ドキュメントの作成
+    - name: create document
+      run: bundle exec jazzy
+
+    # 単体テストの実行
+    - name: Run Fastlane - test
+      run: bundle exec fastlane test
+
+    # テスト結果のアップロード fastlaneで生成している
+    - uses: actions/upload-artifact@v2
+      with:
+        name: test-result
+        path: static_html/test_result
+
+    # コードカバレッジのアップロード fastlaneで生成している
+    - uses: actions/upload-artifact@v2
+      with:
+        name: coverage-result
+        path: static_html/coverage_result
+
+    # AWS S3
+    - name: credential aws
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1
+
+    - name: sync S3
+      working-directory: static_html
+      run: aws s3 sync . s3://templateiosuikit/static_html --delete --grants read=uri=http://acs.amazonaws.com/groups/global/AllUsers --exclude "README.md"
+
+    # slackへ転送
+    - name: Run Fastlane - slack
+      env: 
+         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: bundle exec fastlane send_slack
